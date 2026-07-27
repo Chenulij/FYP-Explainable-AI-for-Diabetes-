@@ -9,7 +9,7 @@ from datetime import date
 from utils.database import get_patient_by_code, create_patient, get_last_prediction, get_next_patient_code
 
 from dateutil.relativedelta import relativedelta
-
+from utils.styles import load_css, render_sidebar
 
 
 # ============================================================
@@ -36,7 +36,8 @@ doctor = st.session_state.doctor
 
 st.set_page_config(page_title="Patient Assessment", page_icon="📋", layout="wide")
 
-
+load_css()
+render_sidebar("Patient Assessment")
 
 # ============================================================
 

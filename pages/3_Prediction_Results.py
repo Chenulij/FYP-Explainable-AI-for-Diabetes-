@@ -4,7 +4,7 @@ from utils.predictor import predict
 from utils.recommendations import get_recommendations, get_clinical_insight
 from utils.shap_explainer import get_shap_values, get_top_features, plot_waterfall, plot_shap_bar
 from utils.database import save_prediction, save_recommendations, get_previous_prediction
-
+from utils.styles import load_css, render_sidebar
 # ============================================================
 # AUTH GUARD
 # ============================================================
@@ -24,6 +24,8 @@ patient_db_id = st.session_state.patient_db_id
 # ============================================================
 st.set_page_config(page_title="Prediction Results", page_icon="📊", layout="wide")
 
+load_css()
+render_sidebar("Prediction Results")
 # ============================================================
 # CUSTOM CSS
 # ============================================================

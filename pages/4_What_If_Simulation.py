@@ -2,6 +2,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 from utils.predictor import predict_whatif
 from utils.shap_explainer import get_shap_values, get_top_features, plot_waterfall
+from utils.styles import load_css, render_sidebar
 
 # ============================================================
 # AUTH GUARD
@@ -22,6 +23,7 @@ patient_input = st.session_state.patient_input
 st.set_page_config(page_title="What-If Simulation", page_icon="🔄", layout="wide")
 from utils.styles import load_css
 load_css()
+render_sidebar("What-If Simulation")
 # ============================================================
 # CUSTOM CSS
 # ============================================================

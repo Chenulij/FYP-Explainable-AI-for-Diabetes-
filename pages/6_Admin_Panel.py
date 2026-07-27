@@ -3,6 +3,7 @@ from utils.database import (
     get_all_doctors, add_doctor,
     toggle_doctor_status, reset_doctor_password
 )
+from utils.styles import load_css
 
 # ============================================================
 # AUTH GUARD — admin only
@@ -16,6 +17,7 @@ admin = st.session_state.admin
 # PAGE CONFIG
 # ============================================================
 st.set_page_config(page_title="Admin Panel", page_icon="🔧", layout="wide")
+load_css()
 
 # ============================================================
 # CUSTOM CSS

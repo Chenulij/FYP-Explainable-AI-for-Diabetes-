@@ -2,7 +2,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 from utils.report_generator import generate_report
 from utils.shap_explainer import plot_waterfall
-
+from utils.styles import load_css, render_sidebar
 # ============================================================
 # AUTH GUARD
 # ============================================================
@@ -32,7 +32,7 @@ all_proba  = result["all_probabilities"]
 st.set_page_config(page_title="Patient Report", page_icon="📄", layout="centered")
 from utils.styles import load_css
 load_css()
-
+render_sidebar("patient_report")
 
 # ============================================================
 # HEADER

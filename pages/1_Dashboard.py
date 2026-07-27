@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from utils.database import get_all_patients, get_patient_history
+from utils.styles import load_css, render_sidebar
 
 # ============================================================
 # AUTH GUARD
@@ -14,6 +15,8 @@ doctor = st.session_state.doctor
 # PAGE CONFIG
 # ============================================================
 st.set_page_config(page_title="Dashboard", page_icon="🏥", layout="wide")
+load_css()
+render_sidebar("Dashboard")
 
 # ============================================================
 # CUSTOM CSS
