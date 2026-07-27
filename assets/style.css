@@ -1,0 +1,248 @@
+/* ============================================================
+   GLOBAL STYLES — CDSS Light Theme
+   ============================================================ */
+
+/* Force white background on main content */
+.stApp {
+    background-color: #f0f4f8;
+}
+
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background-color: #ffffff;
+    border-right: 1px solid #e2e8f0;
+}
+
+/* Hide default Streamlit nav page links */
+[data-testid="stSidebarNav"] {
+    display: none;
+}
+
+/* Main content area */
+.main .block-container {
+    background-color: #f0f4f8;
+    padding-top: 2rem;
+}
+
+/* Cards */
+.cdss-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    margin-bottom: 1rem;
+}
+
+/* Section headers */
+.cdss-section-header {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.8rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid #2563eb;
+    display: inline-block;
+}
+
+/* Metric cards */
+[data-testid="stMetric"] {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* Primary buttons */
+.stButton > button[kind="primary"] {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.5rem 1.2rem;
+    transition: background-color 0.2s;
+}
+
+.stButton > button[kind="primary"]:hover {
+    background-color: #1d4ed8;
+}
+
+/* Secondary buttons */
+.stButton > button {
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.stButton > button:hover {
+    border-color: #2563eb;
+    color: #2563eb;
+}
+
+/* Input fields */
+.stTextInput > div > div > input,
+.stNumberInput > div > div > input,
+.stSelectbox > div > div {
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+}
+
+/* Divider */
+hr {
+    border-color: #e2e8f0;
+}
+
+/* Info/success/warning/error boxes */
+.stAlert {
+    border-radius: 8px;
+}
+
+/* Tabs */
+.stTabs [data-baseweb="tab-list"] {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 0.2rem;
+    border: 1px solid #e2e8f0;
+}
+
+.stTabs [data-baseweb="tab"] {
+    border-radius: 6px;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.stTabs [aria-selected="true"] {
+    background-color: #2563eb;
+    color: white;
+}
+
+/* Table styling */
+.stDataFrame {
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+/* Risk cards */
+.diabetic-card {
+    background: #fef2f2;
+    border: 2px solid #dc2626;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.prediabetic-card {
+    background: #fffbeb;
+    border: 2px solid #d97706;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.normal-card {
+    background: #f0fdf4;
+    border: 2px solid #16a34a;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+/* Clinical insight box */
+.insight-box {
+    background: #eff6ff;
+    border-left: 4px solid #2563eb;
+    border-radius: 8px;
+    padding: 1.2rem 1.5rem;
+    margin: 1rem 0;
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: #1e293b;
+}
+
+/* Recommendation cards */
+.rec-card {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 0.6rem;
+    border-left: 3px solid #2563eb;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.rec-category {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #2563eb;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.3rem;
+}
+
+.rec-text {
+    font-size: 0.92rem;
+    color: #1e293b;
+    line-height: 1.6;
+}
+
+/* Risk factor badges */
+.risk-factor-item {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.9rem;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
+}
+
+.risk-tag {
+    display: inline-block;
+    border-radius: 4px;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: bold;
+    margin-left: 0.5rem;
+}
+
+.tag-high    { background: #fef2f2; color: #dc2626; }
+.tag-protect { background: #f0fdf4; color: #16a34a; }
+
+/* Chart explanation box */
+.chart-explainer {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    margin-top: 0.8rem;
+    font-size: 0.88rem;
+    color: #64748b;
+    line-height: 1.7;
+    border-left: 3px solid #cbd5e1;
+}
+
+/* Patient table rows */
+.patient-row {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    margin-bottom: 0.3rem;
+    border: 1px solid #e2e8f0;
+}
+
+/* Login page */
+.login-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+/* Footer */
+.cdss-footer {
+    text-align: center;
+    margin-top: 3rem;
+    color: #94a3b8;
+    font-size: 0.8rem;
+}

@@ -177,3 +177,152 @@ def get_prediction_recommendations(prediction_id):
         return cursor.fetchall()
     finally:
         conn.close()
+
+def get_last_prediction(patient_id):
+    """Get the most recent prediction values for a patient — used to pre-fill assessment form."""
+    conn = get_connection()
+    if not conn:
+        return None
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT * FROM predictions 
+            WHERE patient_id = %s 
+            ORDER BY predicted_at DESC 
+            LIMIT 1
+        """, (patient_id,))
+        return cursor.fetchone()
+    finally:
+        conn.close()
+
+def get_next_patient_code(doctor_id):
+    """Auto-generate next patient code for this doctor e.g. DOC001-P001"""
+    conn = get_connection()
+    if not conn:
+        return None
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT COUNT(*) FROM patients 
+            WHERE created_by = %s
+        """, (doctor_id,))
+        count = cursor.fetchone()[0]
+        next_num = count + 1
+        return f"DOC{str(doctor_id).zfill(3)}-P{str(next_num).zfill(3)}"
+    finally:
+        conn.close()
+def get_patient_history(patient_id):
+    """Get all past predictions for a patient — for monitoring."""
+    conn = get_connection()
+    if not conn:
+        return []
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT pr.*, d.full_name as doctor_name
+            FROM predictions pr
+            JOIN doctors d ON pr.doctor_id = d.id
+            WHERE pr.patient_id = %s
+            ORDER BY pr.predicted_at DESC
+        """, (patient_id,))
+        return cursor.fetchall()
+    finally:
+        conn.close()
+
+def get_previous_prediction(patient_id):
+    """Get the second most recent prediction for a patient —
+    used AFTER saving the new prediction to compare with 
+    the previous visit."""
+    conn = get_connection()
+    if not conn:
+        return None
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT * FROM predictions
+            WHERE patient_id = %s
+            ORDER BY predicted_at DESC
+            LIMIT 1 OFFSET 1
+        """, (patient_id,))
+        return cursor.fetchone()
+    finally:
+        conn.close()
+
+# ============================================================
+# ADMIN AUTH & MANAGEMENT
+# ============================================================
+def verify_admin(username, password):
+    conn = get_connection()
+    if not conn:
+        return None
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT * FROM admins 
+            WHERE username = %s AND password = %s
+        """, (username, password))
+        return cursor.fetchone()
+    finally:
+        conn.close()
+
+def get_all_doctors():
+    conn = get_connection()
+    if not conn:
+        return []
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT d.*, COUNT(p.id) as total_patients
+            FROM doctors d
+            LEFT JOIN patients p ON p.created_by = d.id
+            GROUP BY d.id
+            ORDER BY d.created_at DESC
+        """)
+        return cursor.fetchall()
+    finally:
+        conn.close()
+
+def add_doctor(doctor_id, full_name, email, password, specialization):
+    conn = get_connection()
+    if not conn:
+        return False, "Database connection failed"
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO doctors (doctor_id, full_name, email, password, specialization)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (doctor_id, full_name, email, password, specialization))
+        conn.commit()
+        return True, "Doctor added successfully"
+    except Exception as e:
+        return False, str(e)
+    finally:
+        conn.close()
+
+def toggle_doctor_status(doctor_id, is_active):
+    conn = get_connection()
+    if not conn:
+        return False
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE doctors SET is_active = %s WHERE id = %s
+        """, (is_active, doctor_id))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+def reset_doctor_password(doctor_id, new_password):
+    conn = get_connection()
+    if not conn:
+        return False
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE doctors SET password = %s WHERE id = %s
+        """, (new_password, doctor_id))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
