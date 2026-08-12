@@ -134,6 +134,13 @@ def load_css():
             padding: 0 !important;
         }
 
+        /* Streamlit 1.4x+ uses stMain instead of the older .main class. */
+        [data-testid="stMain"],
+        section[data-testid="stMain"] {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
 
         /* ============================================================
            MAIN CONTENT CONTAINER
@@ -146,7 +153,9 @@ def load_css():
          * Top padding is zero so the navbar can begin at the top.
          */
 
-        [data-testid="stMainBlockContainer"] {
+        [data-testid="stMainBlockContainer"],
+        .stMainBlockContainer,
+        .main .block-container {
             width: 100% !important;
             max-width: 100% !important;
 
@@ -167,9 +176,7 @@ def load_css():
          * the main container still uses .block-container.
          */
 
-        [data-testid="stAppViewContainer"]
-        > .main
-        .block-container {
+        [data-testid="stAppViewContainer"] .block-container {
             width: 100% !important;
             max-width: 100% !important;
 
@@ -225,14 +232,14 @@ def load_css():
              * This full-bleed technique ignores that padding only
              * for the navbar.
              */
-            width: 100vw !important;
-            max-width: 100vw !important;
+            width: calc(100% + (2 * var(--page-gap))) !important;
+            max-width: none !important;
 
             position: relative !important;
-            left: 50% !important;
+            left: auto !important;
 
-            margin-left: -50vw !important;
-            margin-right: -50vw !important;
+            margin-left: calc(-1 * var(--page-gap)) !important;
+            margin-right: calc(-1 * var(--page-gap)) !important;
 
             /*
              * No blank area above navbar.
