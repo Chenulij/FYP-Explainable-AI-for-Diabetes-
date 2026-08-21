@@ -145,24 +145,6 @@ def save_recommendations(prediction_id, recommendations):
     finally:
         conn.close()
 
-def get_patient_history(patient_id):
-    """Get all past predictions for a patient — for monitoring."""
-    conn = get_connection()
-    if not conn:
-        return []
-    try:
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("""
-            SELECT pr.*, d.full_name as doctor_name
-            FROM predictions pr
-            JOIN doctors d ON pr.doctor_id = d.id
-            WHERE pr.patient_id = %s
-            ORDER BY pr.predicted_at DESC
-        """, (patient_id,))
-        return cursor.fetchall()
-    finally:
-        conn.close()
-
 def get_prediction_recommendations(prediction_id):
     """Get recommendations for a specific prediction."""
     conn = get_connection()
@@ -195,7 +177,7 @@ def get_last_prediction(patient_id):
     finally:
         conn.close()
 
-def get_next_patient_code(doctor_id):
+def get_next_patient_code(doctor_db_id, doctor_code):
     """Auto-generate next patient code for this doctor e.g. DOC001-P001"""
     conn = get_connection()
     if not conn:
@@ -205,12 +187,14 @@ def get_next_patient_code(doctor_id):
         cursor.execute("""
             SELECT COUNT(*) FROM patients 
             WHERE created_by = %s
-        """, (doctor_id,))
+        """, (doctor_db_id,))
         count = cursor.fetchone()[0]
         next_num = count + 1
-        return f"DOC{str(doctor_id).zfill(3)}-P{str(next_num).zfill(3)}"
+        return f"{str(doctor_code).upper()}-P{str(next_num).zfill(3)}"
     finally:
         conn.close()
+
+
 def get_patient_history(patient_id):
     """Get all past predictions for a patient — for monitoring."""
     conn = get_connection()

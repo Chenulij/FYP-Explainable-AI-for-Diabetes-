@@ -31,8 +31,17 @@ def predict(input_data: dict):
     - input_df (for reference)
     """
 
+    # The UI, database, recommendations, and Fitbit import represent sleep
+    # efficiency as a fraction (0.0-1.0), while the model was trained using
+    # percentages (0-100). Convert only at the model boundary so stored data
+    # and the rest of the application keep their existing, consistent scale.
+    model_input = input_data.copy()
+    sleep_efficiency = float(model_input["SleepEfficiency"])
+    if 0.0 <= sleep_efficiency <= 1.0:
+        model_input["SleepEfficiency"] = sleep_efficiency * 100.0
+
     # Build dataframe in the exact column order the model expects
-    input_df = pd.DataFrame([input_data])[feature_columns]
+    input_df = pd.DataFrame([model_input])[feature_columns]
 
     # Scale using the same scaler from training
     input_scaled = scaler.transform(input_df)

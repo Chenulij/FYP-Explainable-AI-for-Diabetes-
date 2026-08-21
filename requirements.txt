@@ -1,0 +1,10 @@
+streamlit
+pandas
+numpy
+scikit-learn==1.9.0
+joblib
+matplotlib
+shap
+mysql-connector-python
+python-dateutil
+reportlab

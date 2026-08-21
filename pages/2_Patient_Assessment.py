@@ -146,7 +146,10 @@ with st.container(key="page-content"):
         if returning_patient:
             suggested_code = returning_patient["patient_code"]
         else:
-            suggested_code = get_next_patient_code(doctor["id"])
+            suggested_code = get_next_patient_code(
+                doctor_db_id=doctor["id"],
+                doctor_code=doctor["doctor_id"]
+            )
 
         col1, col2 = st.columns([2, 4])
         with col1:

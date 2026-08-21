@@ -181,7 +181,10 @@ def generate_report(
         ["Triglycerides",    str(patient_info.get("TG", "—")),
          "Calories",         str(patient_info.get("Calories", "—"))],
         ["Sleep (min)",      str(patient_info.get("TotalMinutesAsleep", "—")),
-         "Sleep Efficiency", str(patient_info.get("SleepEfficiency", "—"))],
+         "Sleep Efficiency", (
+             f"{float(patient_info['SleepEfficiency']):.0%}"
+             if patient_info.get("SleepEfficiency") is not None else "—"
+         )],
     ]
     input_table = Table(input_data, colWidths=[4.5*cm, 4*cm, 4.5*cm, 4*cm])
     input_table.setStyle(TableStyle([

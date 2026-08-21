@@ -813,22 +813,16 @@ def render_sidebar(active_page="Dashboard"):
                     ""
                 )
 
-                st.markdown(
-                    f"""
-                    <div class="topnav-doctor">
-
-                        <b>
-                            {full_name}
-                        </b>
-
-                        <span class="topnav-doctor-sub">
-                            · {specialization}
-                        </span>
-
-                    </div>
-                    """,
-                    unsafe_allow_html=True
+                # Keep the HTML left-aligned. Leading four-space indentation
+                # makes Markdown interpret it as a code block and display the
+                # tags literally instead of rendering them.
+                doctor_html = (
+                    '<div class="topnav-doctor">'
+                    f'<b>{full_name}</b>'
+                    f'<span class="topnav-doctor-sub"> · {specialization}</span>'
+                    '</div>'
                 )
+                st.markdown(doctor_html, unsafe_allow_html=True)
 
 
         # ----------------------------------------------------
