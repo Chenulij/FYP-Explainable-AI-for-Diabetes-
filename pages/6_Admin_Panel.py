@@ -1,7 +1,8 @@
 import streamlit as st
 from utils.database import (
     get_all_doctors, add_doctor,
-    toggle_doctor_status, reset_doctor_password
+    toggle_doctor_status, reset_doctor_password,
+    get_all_admin_patients, toggle_patient_status
 )
 from utils.styles import load_css
 
@@ -169,9 +170,10 @@ with st.container(key="page-content"):
     st.write("")
 
     # ============================================================
-    # LOAD DOCTORS
+    # LOAD ADMIN DATA
     # ============================================================
     doctors = get_all_doctors()
+    patients = get_all_admin_patients()
 
     # ============================================================
     # SUMMARY METRICS
@@ -191,9 +193,13 @@ with st.container(key="page-content"):
     st.write("")
 
     # ============================================================
-    # TABS — View Doctors | Add Doctor
+    # TABS — Doctors | Patients | Add Doctor
     # ============================================================
-    tab1, tab2 = st.tabs(["Manage Doctors", "Add New Doctor"])
+    tab1, tab2, tab3 = st.tabs([
+        "Manage Doctors",
+        "Manage Patients",
+        "Add New Doctor"
+    ])
 
     # ── TAB 1: MANAGE DOCTORS ───────────────────────────────────
     with tab1:
@@ -262,8 +268,110 @@ with st.container(key="page-content"):
                             st.session_state[f"reset_open_{doc['id']}"] = False
                             st.rerun()
 
-    # ── TAB 2: ADD NEW DOCTOR ───────────────────────────────────
+    # ── TAB 2: MANAGE PATIENTS ──────────────────────────────────
     with tab2:
+        st.markdown('<div class="section-title">Registered Patients</div>', unsafe_allow_html=True)
+        st.caption("Archived patients are hidden from doctor dashboards, but their assessment history is retained.")
+
+        patient_total = len(patients)
+        patient_active = sum(1 for p in patients if p.get("is_active"))
+        patient_archived = patient_total - patient_active
+
+        p1, p2, p3 = st.columns(3)
+        with p1:
+            st.metric("Total Patients", patient_total)
+        with p2:
+            st.metric("Active Patients", patient_active)
+        with p3:
+            st.metric("Archived Patients", patient_archived)
+
+        st.write("")
+        filter_col1, filter_col2 = st.columns([3, 1])
+        with filter_col1:
+            patient_search = st.text_input(
+                "Search patients",
+                placeholder="Search by patient code, name or doctor",
+                key="admin_patient_search"
+            ).strip().lower()
+        with filter_col2:
+            patient_status = st.selectbox(
+                "Status",
+                ["All", "Active", "Archived"],
+                key="admin_patient_status"
+            )
+
+        filtered_patients = []
+        for patient in patients:
+            is_patient_active = bool(patient.get("is_active"))
+            searchable_text = " ".join([
+                str(patient.get("patient_code") or ""),
+                str(patient.get("full_name") or ""),
+                str(patient.get("doctor_name") or ""),
+                str(patient.get("doctor_code") or "")
+            ]).lower()
+
+            matches_search = not patient_search or patient_search in searchable_text
+            matches_status = (
+                patient_status == "All"
+                or (patient_status == "Active" and is_patient_active)
+                or (patient_status == "Archived" and not is_patient_active)
+            )
+
+            if matches_search and matches_status:
+                filtered_patients.append(patient)
+
+        if not filtered_patients:
+            st.info("No patients match the selected search and status filters.")
+        else:
+            for patient in filtered_patients:
+                is_patient_active = bool(patient.get("is_active"))
+                card_class = "doctor-card" if is_patient_active else "doctor-card inactive"
+                status_html = (
+                    '<span class="status-pill status-active">Active</span>'
+                    if is_patient_active
+                    else '<span class="status-pill status-inactive">Archived</span>'
+                )
+                card_accent = "var(--success)" if is_patient_active else "var(--ink-400)"
+                latest_risk = patient.get("latest_risk") or "Not assessed"
+                doctor_name = patient.get("doctor_name") or "Unassigned"
+                doctor_code = patient.get("doctor_code") or "N/A"
+
+                col_info, col_action = st.columns([6, 1.4])
+                with col_info:
+                    st.markdown(f"""
+                        <div class="{card_class}" style="--card-accent:{card_accent}">
+                            <span class="doctor-name">{patient['full_name']}</span>{status_html}
+                            <div class="doctor-meta">
+                                Patient: {patient['patient_code']} · Doctor: {doctor_name} ({doctor_code}) ·
+                                Assessments: {patient['total_predictions']} · Latest risk: {latest_risk}
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                with col_action:
+                    st.write("")
+                    action_label = "Archive" if is_patient_active else "Restore"
+                    if st.button(
+                        action_label,
+                        key=f"patient_toggle_{patient['id']}",
+                        use_container_width=True,
+                        type="secondary"
+                    ):
+                        updated = toggle_patient_status(
+                            patient['id'],
+                            not is_patient_active
+                        )
+                        if updated:
+                            st.success(
+                                f"{patient['full_name']} was "
+                                f"{'archived' if is_patient_active else 'restored'}."
+                            )
+                            st.rerun()
+                        else:
+                            st.error("The patient status could not be updated.")
+
+    # ── TAB 3: ADD NEW DOCTOR ───────────────────────────────────
+    with tab3:
         with st.container(border=True):
             st.markdown('<div class="section-title">Add New Doctor</div>', unsafe_allow_html=True)
             st.caption("New doctor will be able to log in immediately after being added.")

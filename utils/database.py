@@ -72,7 +72,10 @@ def get_patient_by_code(patient_code):
         return None
     try:
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM patients WHERE patient_code = %s", (patient_code,))
+        cursor.execute("""
+            SELECT * FROM patients
+            WHERE patient_code = %s
+        """, (patient_code,))
         return cursor.fetchone()
     finally:
         conn.close()
@@ -133,6 +136,7 @@ def get_all_patients(doctor_id):
                 GROUP BY patient_id
             ) ps ON ps.patient_id = p.id
             WHERE p.created_by = %s
+              AND p.is_active = TRUE
             ORDER BY p.created_at DESC
         """, (doctor_id,))
 
@@ -324,6 +328,65 @@ def get_all_doctors():
 
         return cursor.fetchall()
 
+    finally:
+        conn.close()
+
+def get_all_admin_patients():
+    """Return active and archived patients for administrator management."""
+    conn = get_connection()
+    if not conn:
+        return []
+
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT
+                p.*,
+                d.full_name AS doctor_name,
+                d.doctor_id AS doctor_code,
+                COALESCE(ps.total_predictions, 0) AS total_predictions,
+                ps.last_assessed,
+                (
+                    SELECT pr2.prediction_label
+                    FROM predictions pr2
+                    WHERE pr2.patient_id = p.id
+                    ORDER BY pr2.predicted_at DESC, pr2.id DESC
+                    LIMIT 1
+                ) AS latest_risk
+            FROM patients p
+            LEFT JOIN doctors d ON d.id = p.created_by
+            LEFT JOIN (
+                SELECT
+                    patient_id,
+                    COUNT(*) AS total_predictions,
+                    MAX(predicted_at) AS last_assessed
+                FROM predictions
+                GROUP BY patient_id
+            ) ps ON ps.patient_id = p.id
+            ORDER BY p.created_at DESC, p.id DESC
+        """)
+        return cursor.fetchall()
+    finally:
+        conn.close()
+
+def toggle_patient_status(patient_id, is_active):
+    """Archive or restore a patient without deleting clinical history."""
+    conn = get_connection()
+    if not conn:
+        return False
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE patients
+            SET is_active = %s
+            WHERE id = %s
+        """, (is_active, patient_id))
+        conn.commit()
+        return cursor.rowcount == 1
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
         
