@@ -1,14 +1,21 @@
 import mysql.connector
 from mysql.connector import Error
+import streamlit as st
+import certifi
 
 # ============================================================
 # DATABASE CONNECTION SETTINGS
 # ============================================================
 DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': '',  # XAMPP MySQL default has no password
-    'database': 'cdss_db'
+    "host": st.secrets["database"]["host"],
+    "port": int(st.secrets["database"]["port"]),
+    "user": st.secrets["database"]["user"],
+    "password": st.secrets["database"]["password"],
+    "database": st.secrets["database"]["database"],
+    "ssl_ca": certifi.where(),
+    "ssl_verify_cert": True,
+    "ssl_verify_identity": True,
+    "connection_timeout": 20
 }
 
 # ============================================================
@@ -16,11 +23,25 @@ DB_CONFIG = {
 # ============================================================
 def get_connection():
     try:
-        conn = mysql.connector.connect(**DB_CONFIG)
-        return conn
+        return mysql.connector.connect(**DB_CONFIG)
     except Error as e:
         print(f"Database connection error: {e}")
         return None
+
+def get_next_id(cursor, table_name):
+    """Return the next ID for tables imported without AUTO_INCREMENT."""
+    allowed_tables = {
+        "doctors",
+        "patients",
+        "predictions",
+        "recommendations"
+    }
+
+    if table_name not in allowed_tables:
+        raise ValueError("Invalid table name")
+
+    cursor.execute(f"SELECT COALESCE(MAX(id), 0) + 1 FROM {table_name}")
+    return cursor.fetchone()[0]
 
 # ============================================================
 # DOCTOR AUTH
@@ -63,39 +84,62 @@ def create_patient(patient_code, full_name, date_of_birth, gender, contact_numbe
         return None
     try:
         cursor = conn.cursor()
+        new_id = get_next_id(cursor, "patients")
         cursor.execute("""
-            INSERT INTO patients (patient_code, full_name, date_of_birth, gender, contact_number, created_by)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (patient_code, full_name, date_of_birth, gender, contact_number, doctor_id))
+            INSERT INTO patients
+            (id, patient_code, full_name, date_of_birth, gender, contact_number, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (
+            new_id, patient_code, full_name, date_of_birth,
+            gender, contact_number, doctor_id
+        ))
         conn.commit()
-        return cursor.lastrowid
+        return new_id
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 
 def get_all_patients(doctor_id):
-    """Get all patients created by this doctor — for dashboard."""
+    """Get all patients created by this doctor for the dashboard."""
     conn = get_connection()
+
     if not conn:
         return []
+
     try:
         cursor = conn.cursor(dictionary=True)
+
         cursor.execute("""
-            SELECT p.*, 
-                   COUNT(pr.id) as total_predictions,
-                   MAX(pr.predicted_at) as last_assessed,
-                   (SELECT prediction_label FROM predictions 
-                    WHERE patient_id = p.id 
-                    ORDER BY predicted_at DESC LIMIT 1) as latest_risk
+            SELECT
+                p.*,
+                COALESCE(ps.total_predictions, 0) AS total_predictions,
+                ps.last_assessed,
+                (
+                    SELECT pr2.prediction_label
+                    FROM predictions pr2
+                    WHERE pr2.patient_id = p.id
+                    ORDER BY pr2.predicted_at DESC, pr2.id DESC
+                    LIMIT 1
+                ) AS latest_risk
             FROM patients p
-            LEFT JOIN predictions pr ON p.id = pr.patient_id
+            LEFT JOIN (
+                SELECT
+                    patient_id,
+                    COUNT(*) AS total_predictions,
+                    MAX(predicted_at) AS last_assessed
+                FROM predictions
+                GROUP BY patient_id
+            ) ps ON ps.patient_id = p.id
             WHERE p.created_by = %s
-            GROUP BY p.id
             ORDER BY p.created_at DESC
         """, (doctor_id,))
+
         return cursor.fetchall()
+
     finally:
         conn.close()
-
 # ============================================================
 # PREDICTION FUNCTIONS
 # ============================================================
@@ -106,15 +150,16 @@ def save_prediction(patient_id, doctor_id, input_data, prediction_label, confide
         return None
     try:
         cursor = conn.cursor()
+        new_id = get_next_id(cursor, "predictions")
         cursor.execute("""
             INSERT INTO predictions 
-            (patient_id, doctor_id, age, gender, hba1c, tg, bmi, 
+            (id, patient_id, doctor_id, age, gender, hba1c, tg, bmi, 
              total_steps, sedentary_minutes, calories, 
              total_minutes_asleep, sleep_efficiency,
              prediction_label, confidence)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
-            patient_id, doctor_id,
+            new_id, patient_id, doctor_id,
             input_data['AGE'], input_data['Gender'],
             input_data['HbA1c'], input_data['TG'], input_data['BMI'],
             input_data['TotalSteps'], input_data['SedentaryMinutes'],
@@ -123,7 +168,10 @@ def save_prediction(patient_id, doctor_id, input_data, prediction_label, confide
             prediction_label, confidence
         ))
         conn.commit()
-        return cursor.lastrowid
+        return new_id
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 
@@ -136,12 +184,16 @@ def save_recommendations(prediction_id, recommendations):
         cursor = conn.cursor()
         for rec in recommendations:
             # rec is a dict with 'category' and 'text' keys
+            new_id = get_next_id(cursor, "recommendations")
             rec_text = f"[{rec['category']}] {rec['text']}"
             cursor.execute("""
-                INSERT INTO recommendations (prediction_id, recommendation_text)
-                VALUES (%s, %s)
-            """, (prediction_id, rec_text))
+                INSERT INTO recommendations (id, prediction_id, recommendation_text)
+                VALUES (%s, %s, %s)
+            """, (new_id, prediction_id, rec_text))
         conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 
@@ -251,34 +303,49 @@ def verify_admin(username, password):
 
 def get_all_doctors():
     conn = get_connection()
+
     if not conn:
         return []
+
     try:
         cursor = conn.cursor(dictionary=True)
+
         cursor.execute("""
-            SELECT d.*, COUNT(p.id) as total_patients
+            SELECT
+                d.*,
+                (
+                    SELECT COUNT(*)
+                    FROM patients p
+                    WHERE p.created_by = d.id
+                ) AS total_patients
             FROM doctors d
-            LEFT JOIN patients p ON p.created_by = d.id
-            GROUP BY d.id
             ORDER BY d.created_at DESC
         """)
+
         return cursor.fetchall()
+
     finally:
         conn.close()
-
+        
 def add_doctor(doctor_id, full_name, email, password, specialization):
     conn = get_connection()
     if not conn:
         return False, "Database connection failed"
     try:
         cursor = conn.cursor()
+        new_id = get_next_id(cursor, "doctors")
         cursor.execute("""
-            INSERT INTO doctors (doctor_id, full_name, email, password, specialization)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (doctor_id, full_name, email, password, specialization))
+            INSERT INTO doctors
+            (id, doctor_id, full_name, email, password, specialization)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (
+            new_id, doctor_id, full_name,
+            email, password, specialization
+        ))
         conn.commit()
         return True, "Doctor added successfully"
     except Exception as e:
+        conn.rollback()
         return False, str(e)
     finally:
         conn.close()

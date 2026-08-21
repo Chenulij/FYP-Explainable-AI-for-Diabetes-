@@ -8,3 +8,5 @@ shap
 mysql-connector-python
 python-dateutil
 reportlab
+mysql-connector-python
+certifi
